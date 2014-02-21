@@ -174,13 +174,12 @@ public class Client {
 
 			environment.start();
 
-			peerServer = new PeerServer(this);
+			peerServer = new PeerServer(this, localAddress);
 			peerServer.start();
 			peerClient = new PeerClient(this);
 			peerClient.start();
 
-			httpTrackerClient = new HTTPTrackerClient(environment,
-					getLocalAddress());
+			httpTrackerClient = new HTTPTrackerClient(environment, localAddress);
 			httpTrackerClient.start();
 
 			// udpTrackerClient = new UDPTrackerClient(environment, peer);
@@ -194,10 +193,10 @@ public class Client {
 		LOG.info("BitTorrent client [{}] started...", this);
 	}
 
-	private InetSocketAddress getLocalAddress() {
-		// TODO Auto-generated method stub
-		return localAddress;
-	}
+	// private InetSocketAddress getLocalAddress() {
+	// // TODO Auto-generated method stub
+	// return localAddress;
+	// }
 
 	public void stop() throws Exception {
 		LOG.info("BitTorrent client [{}] stopping...", this);
