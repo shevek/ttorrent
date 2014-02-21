@@ -56,7 +56,7 @@ public class AbstractReplicationTest {
 		trackedTorrent = tracker.announce(torrent);
 		trackedTorrent.setAnnounceInterval(60, TimeUnit.SECONDS);
 
-		seed = new Client("S-", new InetSocketAddress("localhost", 6881));
+		seed = new Client("S-", new InetSocketAddress("localhost", 6885));
 		TorrentHandler sharedTorrent = new TorrentHandler(seed, torrent, dir);
 		sharedTorrent.setBlockLength(64);
 		seed.addTorrent(sharedTorrent);
@@ -77,7 +77,7 @@ public class AbstractReplicationTest {
 		File d = TorrentTestUtils.newTorrentDir(getClass().getSimpleName()
 				+ ".client" + i);
 		Client c = new Client("L-" + i + "-", new InetSocketAddress(
-				"localhost", 6882));
+				"localhost", 6890 + i));
 		TorrentHandler sharedTorrent = new TorrentHandler(c, torrent, d);
 		sharedTorrent.setBlockLength(64);
 		c.addTorrent(sharedTorrent);

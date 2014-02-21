@@ -43,7 +43,7 @@ public class TrackingTest {
 			trackedTorrent.setAnnounceInterval(1, TimeUnit.MILLISECONDS);
 
 			Client client = new Client(getClass().getSimpleName(),
-					new InetSocketAddress("localhost", 6881));
+					new InetSocketAddress("localhost", 6883));
 			client.start();
 
 			try {

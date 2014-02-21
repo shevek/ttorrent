@@ -83,33 +83,38 @@ public class Client {
 
 	/**
 	 * Initialize the BitTorrent client.
+	 * 
+	 * @param localAddress
+	 *            The address & port where this client should run
 	 */
 	public Client(InetSocketAddress localAddress) {
 		this(null, localAddress);
 	}
 
-	// public Client(@CheckForNull String peerName) {
-	// this.environment = new ClientEnvironment(peerName);
-	// }
-
+	/**
+	 * Initialize the BitTorrent client.
+	 * 
+	 * @param peerName
+	 *            the name of the client.
+	 * @param localAddress
+	 *            The address & port where this client should run
+	 */
 	public Client(@CheckForNull String peerName, InetSocketAddress localAddress) {
 		this.environment = new ClientEnvironment(peerName);
 		this.localAddress = localAddress;
 	}
 
 	/**
-	 * A convenience constructor to start with a single torrent.
+	 * A convenience constructor to start with a single torrent. The name of the
+	 * client will be the the name of the torrent.
 	 * 
 	 * @param torrent
 	 *            The torrent to download and share.
+	 * @param outputDir
+	 *            The location where the data should be placed.
+	 * @param localAddress
+	 *            Which address & Port to use.
 	 */
-	// public Client(@Nonnull Torrent torrent, @Nonnull File outputDir)
-	// throws IOException, InterruptedException {
-	// this(torrent.getName());
-	// addTorrent(new TorrentHandler(this, torrent, outputDir));
-	//
-	// }
-
 	public Client(@Nonnull Torrent torrent, @Nonnull File outputDir,
 			InetSocketAddress localAddress) throws IOException,
 			InterruptedException {
@@ -192,11 +197,6 @@ public class Client {
 		}
 		LOG.info("BitTorrent client [{}] started...", this);
 	}
-
-	// private InetSocketAddress getLocalAddress() {
-	// // TODO Auto-generated method stub
-	// return localAddress;
-	// }
 
 	public void stop() throws Exception {
 		LOG.info("BitTorrent client [{}] stopping...", this);
