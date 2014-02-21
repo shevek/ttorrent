@@ -22,9 +22,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -41,12 +39,10 @@ import com.turn.ttorrent.client.Client;
 public class PeerServer {
 
 	private static final Logger LOG = LoggerFactory.getLogger(PeerServer.class);
-	public static final int PORT_RANGE_START = 6881;
-	public static final int PORT_RANGE_END = 6999;
 	public static final int CLIENT_KEEP_ALIVE_MINUTES = 3;
 	private final Client client;
 	@CheckForNull
-	private final SocketAddress address;
+	private final InetSocketAddress address;
 	private EventLoopGroup group;
 	private ChannelFuture future;
 
@@ -72,28 +68,25 @@ public class PeerServer {
 		b.childOption(ChannelOption.SO_KEEPALIVE, true);
 		// b.childOption(ChannelOption.SO_TIMEOUT, (int)
 		// TimeUnit.MINUTES.toMillis(CLIENT_KEEP_ALIVE_MINUTES));
-		if (address != null) {
-			future = b.bind(address).sync();
-		} else {
-			BIND: {
-				Exception x = new IOException(
-						"No available port for the BitTorrent client!");
-				for (int i = PORT_RANGE_START; i <= PORT_RANGE_END; i++) {
-					try {
-						future = b.bind(i).sync();
-						break BIND;
-					} catch (InterruptedException e) {
-						throw e;
-					} catch (Exception e) {
-						x = e;
-					}
-				}
-				throw new IOException(
-						"Failed to find an address to bind in range ["
-								+ PORT_RANGE_START + "," + PORT_RANGE_END + "]",
-						x);
-			}
-		}
+		// if (address != null) {
+		future = b.bind(address).sync();
+		// } else {
+		// BIND: {
+		// Exception x = new IOException(
+		// "No available port for the BitTorrent client!");
+		// for (int i = PORT_RANGE_START; i <= PORT_RANGE_END; i++) {
+		// try {
+		// future = b.bind(i).sync();
+		// break BIND;
+		// } catch (InterruptedException e) {
+		// throw e;
+		// } catch (Exception e) {
+		// x = e;
+		// }
+		// }
+		// throw new IOException("Failed to bind to address: " + address);
+		// }
+		// }
 	}
 
 	public void stop() throws InterruptedException {
