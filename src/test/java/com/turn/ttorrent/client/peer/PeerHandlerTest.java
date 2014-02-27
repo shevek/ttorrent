@@ -29,69 +29,65 @@ import com.turn.ttorrent.test.TestPeerPieceProvider;
 import com.turn.ttorrent.test.TorrentTestUtils;
 
 /**
- * 
+ *
  * @author shevek
  */
 public class PeerHandlerTest {
 
-	private static final Logger LOG = LoggerFactory
-			.getLogger(PeerHandlerTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PeerHandlerTest.class);
 
-	@Test
-	public void testPeerHandler() throws Exception {
-		byte[] peerId = Arrays.copyOf(new byte[] { 1, 2, 3, 4, 5, 6 }, 20);
-		File dir = TorrentTestUtils.newTorrentDir("PeerHandlerTest-server");
-		Torrent torrent = TorrentTestUtils.newTorrent(dir, 12345);
+    @Test
+    public void testPeerHandler() throws Exception {
+        byte[] peerId = Arrays.copyOf(new byte[] { 1, 2, 3, 4, 5, 6 }, 20);
+        File dir = TorrentTestUtils.newTorrentDir("PeerHandlerTest-server");
+        Torrent torrent = TorrentTestUtils.newTorrent(dir, 12345);
 
-		LocalAddress address = new LocalAddress("test");
-		LocalEventLoopGroup group = new LocalEventLoopGroup(1);
-		SERVER: {
-			Client client = new Client(torrent, dir, new InetSocketAddress(
-					"localhost", 6881));
-			ServerBootstrap b = new ServerBootstrap().group(group)
-					.channel(LocalServerChannel.class)
-					.childHandler(new PeerServerHandshakeHandler(client));
-			b.bind(address).sync();
-		}
+        LocalAddress address = new LocalAddress("test");
+        LocalEventLoopGroup group = new LocalEventLoopGroup(1);
+        SERVER:
+        {
+            Client client = new Client(torrent, dir, new InetSocketAddress("localhost", 6881));
+            ServerBootstrap b = new ServerBootstrap()
+                    .group(group)
+                    .channel(LocalServerChannel.class)
+                    .childHandler(new PeerServerHandshakeHandler(client));
+            b.bind(address).sync();
+        }
 
-		PeerConnectionListener connectionListener = EasyMock
-				.createMock(PeerConnectionListener.class);
+        PeerConnectionListener connectionListener = EasyMock.createMock(PeerConnectionListener.class);
 
-		Channel channel;
-		CLIENT: {
-			Bootstrap b = new Bootstrap()
-					.group(group)
-					.channel(LocalChannel.class)
-					.handler(
-							new PeerClientHandshakeHandler(connectionListener,
-									torrent.getInfoHash(), peerId));
-			channel = b.connect(address).sync().channel();
-		}
+        Channel channel;
+        CLIENT:
+        {
+            Bootstrap b = new Bootstrap()
+                    .group(group)
+                    .channel(LocalChannel.class)
+                    .handler(new PeerClientHandshakeHandler(connectionListener, torrent.getInfoHash(), peerId));
+            channel = b.connect(address).sync().channel();
+        }
 
-		TestPeerPieceProvider provider = new TestPeerPieceProvider(torrent);
-		PeerActivityListener activityListener = EasyMock
-				.createMock(PeerActivityListener.class);
-		PeerHandler peerHandler = new PeerHandler(peerId, channel, provider,
-				connectionListener, activityListener);
+        TestPeerPieceProvider provider = new TestPeerPieceProvider(torrent);
+        PeerActivityListener activityListener = EasyMock.createMock(PeerActivityListener.class);
+        PeerHandler peerHandler = new PeerHandler(peerId, channel, provider, connectionListener, activityListener);
 
-		EasyMock.reset(activityListener, connectionListener);
-		EasyMock.replay(activityListener, connectionListener);
-		peerHandler.run();
-		EasyMock.verify(activityListener, connectionListener);
+        EasyMock.reset(activityListener, connectionListener);
+        EasyMock.replay(activityListener, connectionListener);
+        peerHandler.run();
+        EasyMock.verify(activityListener, connectionListener);
 
-		if (true)
-			return;
+        if (true)
+            return;
 
-		EasyMock.reset(activityListener, connectionListener);
-		EasyMock.replay(activityListener, connectionListener);
-		provider.setPieceHandler(0);
-		peerHandler.run();
-		EasyMock.verify(activityListener, connectionListener);
+        EasyMock.reset(activityListener, connectionListener);
+        EasyMock.replay(activityListener, connectionListener);
+        provider.setPieceHandler(0);
+        peerHandler.run();
+        EasyMock.verify(activityListener, connectionListener);
 
-		EasyMock.reset(activityListener, connectionListener);
-		EasyMock.replay(activityListener, connectionListener);
-		peerHandler.run();
-		EasyMock.verify(activityListener, connectionListener);
+        EasyMock.reset(activityListener, connectionListener);
+        EasyMock.replay(activityListener, connectionListener);
+        peerHandler.run();
+        EasyMock.verify(activityListener, connectionListener);
 
-	}
+    }
 }

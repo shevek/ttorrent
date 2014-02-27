@@ -38,69 +38,38 @@ import com.turn.ttorrent.client.Client;
  */
 public class PeerServer {
 
-	private static final Logger LOG = LoggerFactory.getLogger(PeerServer.class);
-	public static final int CLIENT_KEEP_ALIVE_MINUTES = 3;
-	private final Client client;
-	@CheckForNull
-	private final InetSocketAddress address;
-	private EventLoopGroup group;
-	private ChannelFuture future;
+    private static final Logger LOG = LoggerFactory.getLogger(PeerServer.class);
+    public static final int CLIENT_KEEP_ALIVE_MINUTES = 3;
+    private final Client client;
+    @CheckForNull
+    private final InetSocketAddress address;
+    private EventLoopGroup group;
+    private ChannelFuture future;
 
-	public PeerServer(@Nonnull Client client,
-			@CheckForNull InetSocketAddress address) {
-		this.client = client;
-		this.address = address;
-	}
+    public PeerServer(@Nonnull Client client, @CheckForNull InetSocketAddress address) {
+        this.client = client;
+        this.address = address;
+    }
 
-	// public PeerServer(@Nonnull Client client) {
-	// this(client, null);
-	// }
+    public void start() throws Exception {
+        group = new NioEventLoopGroup();
+        ServerBootstrap b = new ServerBootstrap();
+        b.group(group);
+        b.channel(NioServerSocketChannel.class);
+        b.option(ChannelOption.SO_BACKLOG, 128);
+        b.option(ChannelOption.SO_REUSEADDR, true);
+        b.option(ChannelOption.TCP_NODELAY, true);
+        b.childHandler(new PeerServerHandshakeHandler(client));
+        b.childOption(ChannelOption.SO_KEEPALIVE, true);
+        future = b.bind(address).sync();
+    }
 
-	public void start() throws Exception {
-		group = new NioEventLoopGroup();
-		ServerBootstrap b = new ServerBootstrap();
-		b.group(group);
-		b.channel(NioServerSocketChannel.class);
-		b.option(ChannelOption.SO_BACKLOG, 128);
-		b.option(ChannelOption.SO_REUSEADDR, true);
-		b.option(ChannelOption.TCP_NODELAY, true);
-		b.childHandler(new PeerServerHandshakeHandler(client));
-		b.childOption(ChannelOption.SO_KEEPALIVE, true);
-		// b.childOption(ChannelOption.SO_TIMEOUT, (int)
-		// TimeUnit.MINUTES.toMillis(CLIENT_KEEP_ALIVE_MINUTES));
-		// if (address != null) {
-		future = b.bind(address).sync();
-		// } else {
-		// BIND: {
-		// Exception x = new IOException(
-		// "No available port for the BitTorrent client!");
-		// for (int i = PORT_RANGE_START; i <= PORT_RANGE_END; i++) {
-		// try {
-		// future = b.bind(i).sync();
-		// break BIND;
-		// } catch (InterruptedException e) {
-		// throw e;
-		// } catch (Exception e) {
-		// x = e;
-		// }
-		// }
-		// throw new IOException("Failed to bind to address: " + address);
-		// }
-		// }
-	}
-
-	public void stop() throws InterruptedException {
-		try {
-			future.channel().close().sync();
-			group.shutdownGracefully();
-		} finally {
-			future = null;
-		}
-	}
-
-	// @Nonnull
-	// public InetSocketAddress getLocalAddress() {
-	// ServerSocketChannel channel = (ServerSocketChannel) future.channel();
-	// return channel.localAddress();
-	// }
+    public void stop() throws InterruptedException {
+        try {
+            future.channel().close().sync();
+            group.shutdownGracefully();
+        } finally {
+            future = null;
+        }
+    }
 }

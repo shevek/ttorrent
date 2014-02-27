@@ -22,54 +22,49 @@ import com.turn.ttorrent.tracker.TrackedTorrent;
 import com.turn.ttorrent.tracker.Tracker;
 
 /**
- * 
+ *
  * @author shevek
  */
 public class TrackingTest {
 
-	@Test
-	public void testTracking() throws Exception {
-		Tracker tracker = new Tracker(new InetSocketAddress("localhost", 5674));
-		tracker.start();
+    @Test
+    public void testTracking() throws Exception {
+        Tracker tracker = new Tracker(new InetSocketAddress("localhost", 5674));
+        tracker.start();
 
-		try {
-			File dir = TorrentTestUtils.newTorrentDir("c_seed");
-			TorrentCreator creator = TorrentTestUtils.newTorrentCreator(dir,
-					12345678);
-			creator.setAnnounce(tracker.getAnnounceUrl().toURI());
-			Torrent torrent = creator.create();
+        try {
+            File dir = TorrentTestUtils.newTorrentDir("c_seed");
+            TorrentCreator creator = TorrentTestUtils.newTorrentCreator(dir, 12345678);
+            creator.setAnnounce(tracker.getAnnounceUrl().toURI());
+            Torrent torrent = creator.create();
 
-			TrackedTorrent trackedTorrent = tracker.announce(torrent);
-			trackedTorrent.setAnnounceInterval(1, TimeUnit.MILLISECONDS);
+            TrackedTorrent trackedTorrent = tracker.announce(torrent);
+            trackedTorrent.setAnnounceInterval(1, TimeUnit.MILLISECONDS);
 
-			Client client = new Client(getClass().getSimpleName(),
-					new InetSocketAddress("localhost", 6883));
-			client.start();
+            Client client = new Client(getClass().getSimpleName(), new InetSocketAddress("localhost", 6883));
+            client.start();
 
-			try {
-				final CountDownLatch latch = new CountDownLatch(2);
-				TorrentMetadataProvider torrentMetadataProvider = new TestTorrentMetadataProvider(
-						torrent.getInfoHash(), tracker.getAnnounceUrl().toURI()) {
-					@Override
-					public void addPeers(
-							Iterable<? extends SocketAddress> peerAddresses) {
-						super.addPeers(peerAddresses);
-						latch.countDown();
-					}
-				};
-				TrackerHandler trackerHandler = new TrackerHandler(client,
-						torrentMetadataProvider);
-				trackerHandler.start();
+            try {
+                final CountDownLatch latch = new CountDownLatch(2);
+                TorrentMetadataProvider torrentMetadataProvider = new TestTorrentMetadataProvider(torrent.getInfoHash(), tracker.getAnnounceUrl().toURI()) {
+                    @Override
+                    public void addPeers(Iterable<? extends SocketAddress> peerAddresses) {
+                        super.addPeers(peerAddresses);
+                        latch.countDown();
+                    }
+                };
+                TrackerHandler trackerHandler = new TrackerHandler(client, torrentMetadataProvider);
+                trackerHandler.start();
 
-				latch.await(30, TimeUnit.SECONDS);
-				assertEquals(0, latch.getCount());
+                latch.await(30, TimeUnit.SECONDS);
+                assertEquals(0, latch.getCount());
 
-				trackerHandler.stop();
-			} finally {
-				client.stop();
-			}
-		} finally {
-			tracker.stop();
-		}
-	}
+                trackerHandler.stop();
+            } finally {
+                client.stop();
+            }
+        } finally {
+            tracker.stop();
+        }
+    }
 }
