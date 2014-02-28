@@ -16,6 +16,7 @@
 package com.turn.ttorrent.client;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.io.Files;
 import com.turn.ttorrent.common.Torrent;
@@ -24,6 +25,7 @@ import com.turn.ttorrent.client.storage.TorrentByteStorage;
 import com.turn.ttorrent.client.storage.FileStorage;
 import com.turn.ttorrent.client.storage.FileCollectionStorage;
 
+import com.turn.ttorrent.common.TorrentUtils;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -38,7 +40,6 @@ import java.util.List;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadPoolExecutor;
-import javax.annotation.CheckForNull;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import org.apache.commons.io.FileUtils;
@@ -128,10 +129,9 @@ public class TorrentHandler implements TorrentMetadataProvider {
     }
 
     @Nonnull
-    private static TorrentByteStorage toStorage(@Nonnull Torrent torrent, @CheckForNull File parent)
+    private static TorrentByteStorage toStorage(@Nonnull Torrent torrent, @Nonnull File parent)
             throws IOException {
-        if (parent == null)
-            throw new NullPointerException("No parent directory given.");
+        Preconditions.checkNotNull(parent, "Parent directory was null.");
 
         String parentPath = parent.getCanonicalPath();
 
@@ -571,6 +571,6 @@ public class TorrentHandler implements TorrentMetadataProvider {
 
     @Override
     public String toString() {
-        return Torrent.byteArrayToHexString(getInfoHash()) + " [" + getCompletedPieceCount() + "/" + getPieceCount() + "]";
+        return TorrentUtils.toHex(getInfoHash()) + " [" + getCompletedPieceCount() + "/" + getPieceCount() + "]";
     }
 }

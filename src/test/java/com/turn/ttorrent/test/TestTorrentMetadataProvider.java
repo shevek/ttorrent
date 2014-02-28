@@ -5,9 +5,9 @@
 package com.turn.ttorrent.test;
 
 import com.turn.ttorrent.client.TorrentMetadataProvider;
+import com.turn.ttorrent.common.TorrentUtils;
 import java.net.SocketAddress;
 import java.net.URI;
-import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Nonnull;
 
@@ -18,11 +18,11 @@ import javax.annotation.Nonnull;
 public class TestTorrentMetadataProvider implements TorrentMetadataProvider {
 
     private final byte[] infoHash;
-    private final URI uri;
+    private final List<List<URI>> uris;
 
-    public TestTorrentMetadataProvider(@Nonnull byte[] infoHash, @Nonnull URI uri) {
+    public TestTorrentMetadataProvider(@Nonnull byte[] infoHash, @Nonnull List<List<URI>> uris) {
         this.infoHash = infoHash;
-        this.uri = uri;
+        this.uris = uris;
     }
 
     @Override
@@ -32,7 +32,7 @@ public class TestTorrentMetadataProvider implements TorrentMetadataProvider {
 
     @Override
     public List<? extends List<? extends URI>> getAnnounceList() {
-        return Arrays.asList(Arrays.asList(uri));
+        return uris;
     }
 
     @Override
@@ -52,5 +52,10 @@ public class TestTorrentMetadataProvider implements TorrentMetadataProvider {
 
     @Override
     public void addPeers(Iterable<? extends SocketAddress> peerAddresses) {
+    }
+
+    @Override
+    public String toString() {
+        return "TestTorrentMetadataProvider(" + TorrentUtils.toHex(getInfoHash()) + ")";
     }
 }

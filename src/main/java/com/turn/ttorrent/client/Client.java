@@ -35,6 +35,7 @@ import com.turn.ttorrent.client.io.PeerClient;
 import com.turn.ttorrent.client.io.PeerServer;
 import com.turn.ttorrent.client.tracker.HTTPTrackerClient;
 import com.turn.ttorrent.common.Torrent;
+import com.turn.ttorrent.common.TorrentUtils;
 
 /**
  * A pure-java BitTorrent client.
@@ -113,7 +114,6 @@ public class Client {
             InetSocketAddress localAddress) throws IOException, InterruptedException {
         this(torrent.getName(), localAddress);
         addTorrent(new TorrentHandler(this, torrent, outputDir));
-
     }
 
     @Nonnull
@@ -152,12 +152,12 @@ public class Client {
 
     @Nonnull
     public HTTPTrackerClient getHttpTrackerClient() {
-        synchronized (lock) {
-            HTTPTrackerClient h = httpTrackerClient;
-            if (h == null)
-                throw new IllegalStateException("No HTTPTrackerClient - bad state: " + this);
-            return h;
-        }
+        // Not locked, as should only be read after a happen-before event.
+        // Causes a deadlock against stop() as called from TrackerHandler.
+        HTTPTrackerClient h = httpTrackerClient;
+        if (h == null)
+            throw new IllegalStateException("No HTTPTrackerClient - bad state: " + this);
+        return h;
     }
 
     /*
@@ -188,7 +188,7 @@ public class Client {
 
             setState(State.STARTED);
         }
-        LOG.info("BitTorrent client [{}] started...", this);
+        LOG.info("BitTorrent client [{}] started.", this);
     }
 
     public void stop() throws Exception {
@@ -214,19 +214,19 @@ public class Client {
 
             setState(State.STOPPED);
         }
-        LOG.info("BitTorrent client [{}] stopped...", this);
+        LOG.info("BitTorrent client [{}] stopped.", this);
     }
 
     @CheckForNull
     public TorrentHandler getTorrent(@Nonnull byte[] infoHash) {
-        String hexInfoHash = Torrent.byteArrayToHexString(infoHash);
+        String hexInfoHash = TorrentUtils.toHex(infoHash);
         return torrents.get(hexInfoHash);
     }
 
     public void addTorrent(@Nonnull TorrentHandler torrent) throws IOException, InterruptedException {
         // This lock guarantees that we are started or stopped.
         synchronized (lock) {
-            torrents.put(Torrent.byteArrayToHexString(torrent.getInfoHash()), torrent);
+            torrents.put(TorrentUtils.toHex(torrent.getInfoHash()), torrent);
             if (getState() == State.STARTED)
                 torrent.start();
         }
@@ -234,7 +234,7 @@ public class Client {
 
     public void removeTorrent(@Nonnull TorrentHandler torrent) {
         synchronized (lock) {
-            torrents.remove(Torrent.byteArrayToHexString(torrent.getInfoHash()), torrent);
+            torrents.remove(TorrentUtils.toHex(torrent.getInfoHash()), torrent);
             if (getState() == State.STARTED)
                 torrent.stop();
         }
@@ -247,7 +247,7 @@ public class Client {
 
     @CheckForNull
     public TorrentHandler removeTorrent(@Nonnull byte[] infoHash) {
-        TorrentHandler torrent = torrents.get(Torrent.byteArrayToHexString(infoHash));
+        TorrentHandler torrent = torrents.get(TorrentUtils.toHex(infoHash));
         if (torrent != null)
             removeTorrent(torrent);
         return torrent;

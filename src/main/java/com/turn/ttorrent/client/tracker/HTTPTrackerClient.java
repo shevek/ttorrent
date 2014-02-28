@@ -97,20 +97,26 @@ public class HTTPTrackerClient extends TrackerClient {
         @Override
         public void completed(HttpResponse response) {
             if (LOG.isTraceEnabled())
-                LOG.trace("{} -> {}", request.getRequestLine(), response.getStatusLine());
+                LOG.trace("Completed: {} -> {}", request.getRequestLine(), response.getStatusLine());
             try {
                 HTTPTrackerMessage message = toMessage(response, -1);
                 if (message != null)
                     handleTrackerAnnounceResponse(listener, tracker, message, false);
             } catch (Exception e) {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Failed to handle announce response", e);
                 failed(e);
             }
         }
 
         @Override
         public void failed(Exception e) {
+            // This error wasn't necessarily reported elsewhere.
+            if (LOG.isDebugEnabled())
+                LOG.debug("Failed: {} -> {}", request.getRequestLine(), e);
             // TODO: Pass failure back to TrackerHandler.
-            LOG.trace("Failed: " + request.getRequestLine(), e);
+            // LOG.trace("Failed: " + request.getRequestLine(), e);
+            listener.handleAnnounceFailed(tracker, "HTTP failed: " + e);
         }
 
         @Override
@@ -144,9 +150,10 @@ public class HTTPTrackerClient extends TrackerClient {
             URI tracker,
             TrackerMessage.AnnounceEvent event,
             boolean inhibitEvents) throws AnnounceException {
-        LOG.info("Announcing{} to tracker with {}U/{}D/{}L bytes...",
+        LOG.info("Announcing{} to tracker {} with {}U/{}D/{}L bytes...",
                 new Object[]{
             TrackerClient.formatAnnounceEvent(event),
+            tracker,
             torrent.getUploaded(),
             torrent.getDownloaded(),
             torrent.getLeft()

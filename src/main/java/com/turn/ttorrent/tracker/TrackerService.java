@@ -20,6 +20,7 @@ import com.turn.ttorrent.bcodec.StreamBEncoder;
 import com.turn.ttorrent.common.Peer;
 import com.turn.ttorrent.common.Torrent;
 import com.turn.ttorrent.common.protocol.TrackerMessage;
+import com.turn.ttorrent.common.protocol.TrackerMessage.AnnounceRequestMessage;
 import com.turn.ttorrent.common.protocol.TrackerMessage.MessageValidationException;
 import com.turn.ttorrent.common.protocol.http.*;
 
@@ -185,8 +186,16 @@ public class TrackerService implements Container {
         TrackerMessage.AnnounceEvent event = announceRequest.getEvent();
 
         InetSocketAddress peerAddress = announceRequest.getPeerAddress();
-        if (!Peer.isValidIpAddress(peerAddress))
-            peerAddress = new InetSocketAddress(request.getClientAddress().getAddress(), peerAddress.getPort());
+        if (!Peer.isValidIpAddress(peerAddress)) {
+            InetSocketAddress discoveredPeerAddress = new InetSocketAddress(request.getClientAddress().getAddress(), peerAddress.getPort());
+            LOG.debug("Peer specified address {}; using {} instead.", peerAddress, discoveredPeerAddress);
+            peerAddress = discoveredPeerAddress;
+        }
+        if (!Peer.isValidIpAddress(peerAddress)) {
+            LOG.debug("Peer address is invalid: {}", peerAddress);
+            this.serveError(response, body, Status.BAD_REQUEST,
+                    TrackerMessage.ErrorMessage.FailureReason.MISSING_PEER_ADDRESS);
+        }
         TrackedPeer client = torrent.getPeer(peerAddress);
 
         // When no event is specified, it's a periodic update while the client
@@ -230,7 +239,7 @@ public class TrackerService implements Container {
         HTTPAnnounceResponseMessage announceResponse;
         try {
             announceResponse = new HTTPAnnounceResponseMessage(
-                    request.getClientAddress().getAddress().getAddress(),
+                    request.getClientAddress().getAddress(),
                     (int) TimeUnit.MILLISECONDS.toSeconds(torrent.getAnnounceInterval()),
                     // TrackedTorrent.MIN_ANNOUNCE_INTERVAL_SECONDS,
                     // this.version,
@@ -238,7 +247,7 @@ public class TrackerService implements Container {
                     torrent.leechers(),
                     torrent.getSomePeers(client, announceRequest.getNumWant()));
             BytesBEncoder encoder = new BytesBEncoder();
-            encoder.bencode(announceResponse.toBEValue(announceRequest.getCompact()));
+            encoder.bencode(announceResponse.toBEValue(announceRequest.getCompact(), announceRequest.getNoPeerIds()));
             body.write(encoder.toByteArray());  // This is the raw network stream.
         } catch (Exception e) {
             requestResponseFailed.mark();
