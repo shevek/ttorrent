@@ -1,4 +1,3 @@
-com.turn.torrent.tracker.simple
 com.turn.ttorrent.client
 com.turn.ttorrent.client.io
 com.turn.ttorrent.client.main
@@ -13,4 +12,5 @@ com.turn.ttorrent.protocol.tracker.udp
 com.turn.ttorrent.tracker
 com.turn.ttorrent.tracker.client
 com.turn.ttorrent.tracker.servlet
+com.turn.ttorrent.tracker.simple
 com.turn.ttorrent.tracker.spring
