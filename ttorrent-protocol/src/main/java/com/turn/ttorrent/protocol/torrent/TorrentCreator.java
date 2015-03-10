@@ -65,7 +65,7 @@ import org.slf4j.LoggerFactory;
  * also used as the torrent's name.
  * @param files The files to add into this torrent.
  * @param announce The announce URI that will be used for this torrent.
- * @param announceList The announce URIs organized as tiers that will 
+ * @param announceList The announce URIs organized as tiers that will
  * be used for this torrent
  * @param createdBy The creator's name, or any string identifying the
  * torrent's creator.
@@ -107,12 +107,12 @@ public class TorrentCreator {
 
     /**
      * Creates a new executor suitable for torrent hashing.
-     * 
+     *
      * This executor controls memory usage by using a bounded queue, and the
      * CallerRunsPolicy slows down the producer if the queue bound is exceeded.
      * The requirement is then to make the queue large enough to keep all the
      * executor threads busy if the producer executes a task itself.
-     * 
+     *
      * In terms of memory, Executor.execute is much more efficient than
      * ExecutorService.submit, and ByteBuffer(s) released by the ChunkHasher(s)
      * remain in eden space, so are rapidly recycled for reading the next
@@ -352,10 +352,26 @@ public class TorrentCreator {
         Stopwatch stopwatch = Stopwatch.createStarted();
         int piece = 0;
         for (File file : files) {
+            long fileLength = file.length();
             logger.info("Hashing data from {} ({} pieces)...", new Object[]{
                 file.getName(),
-                LongMath.divide(file.length(), pieceLength, RoundingMode.CEILING)
+                LongMath.divide(fileLength, pieceLength, RoundingMode.CEILING)
             });
+
+            long mapStart = 0;
+            /*
+            while (mapStart < fileLength) {
+                long mapSize = file.length() - mapStart;
+                if (mapSize > Integer.MAX_VALUE) {
+                    long mapPieceCount = LongMath.divide(Integer.MAX_VALUE, pieceLength, RoundingMode.FLOOR);
+                    mapSize = mapPieceCount * pieceLength;
+                }
+
+                // Do the work here.
+
+                mapStart += mapSize;
+            }
+            */
 
             MappedByteBuffer map = Files.map(file, FileChannel.MapMode.READ_ONLY);
             int step = 10;
@@ -368,7 +384,7 @@ public class TorrentCreator {
                 executor.execute(new ChunkHasher(out, piece, latch, buffer));
                 piece++;
 
-                if (map.position() / (double) map.capacity() * 100f > step) {
+                if (mapStart + map.position() / (double) fileLength * 100f > step) {
                     logger.info("  ... {}% complete", step);
                     step += 10;
                 }
@@ -401,12 +417,12 @@ public class TorrentCreator {
 
         logger.info("Hashed {} file(s) ({} bytes) in {} pieces ({} expected) in {}.",
                 new Object[]{
-            files.size(),
-            nbytes,
-            piece,
-            npieces,
-            stopwatch
-        });
+                    files.size(),
+                    nbytes,
+                    piece,
+                    npieces,
+                    stopwatch
+                });
 
         if (npieces != piece)
             throw new IllegalStateException("Unexpected piece count " + piece + "; expected " + npieces);
